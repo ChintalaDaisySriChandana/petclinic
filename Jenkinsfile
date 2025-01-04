@@ -1,102 +1,87 @@
-@Library('my-shared-library') _  // Import shared library
+@Library('my-shared-library@main') _
 
 pipeline {
-    agent any
+    agent { label 'slave-1' }
 
     environment {
-        GIT_CREDENTIALS = credentials('git-credentials-id')  // Define Git credentials ID for SCM
+        JAVA_HOME = '/usr/lib/jvm/java-17-openjdk-amd64'
+        MAVEN_HOME = '/usr/share/maven'
+        PATH = "${JAVA_HOME}/bin:${MAVEN_HOME}/bin:${env.PATH}"
     }
 
-    stages {
-        stage('Checkout SCM') {
+   stages {
+        stage('Checkout Code') {
+            steps {
+		script {
+			pipeline.checkscm()
+		}		
+       	}
+     }
+        stage('Set up Java 17') {
             steps {
                 script {
-                    // Checkout code from the repository (using Jenkins SCM configuration)
-                    checkout scm
-                    // Or specify the git checkout directly if required
-                    // git url: 'https://github.com/ChintalaDaisySriChandana/petclinic.git', branch: 'main', credentialsId: 'git-credentials-id'
+                	pipeline.setupjava()
                 }
+            }
+	}
+
+        stage('Set up Maven') {
+            steps {
+                script {
+                	pipeline.mavensetup()
+		}
             }
         }
 
-        stage('Setup Java') {
+        stage('Build with Maven') {
             steps {
                 script {
-                    // Setup Java (could be an install or configuration task)
-                    sh 'java -version'
-                }
-            }
-        }
-
-        stage('Setup Maven') {
-            steps {
-                script {
-                    // Setup Maven (e.g., check Maven version)
-                    sh 'mvn -v'
-                }
-            }
-        }
-
-        stage('Build and Test') {
-            steps {
-                script {
-                    // Execute Maven build and tests
-                    sh 'mvn clean install'
-                }
+			pipeline.build()
+		}
             }
         }
 
         stage('Upload Artifact') {
             steps {
-                script {
-                    // Upload build artifacts (optional)
-                    echo "Uploading artifacts..."
-                }
+                uploadArtifact('target/petclinic-0.0.1-SNAPSHOT.jar')
             }
         }
 
         stage('Run Application') {
             steps {
                 script {
-                    // Run the application (e.g., starting a service or application)
-                    echo "Running the application..."
-                }
+				pipeline.runApp()
+				}
             }
         }
 
-        stage('Validate Application') {
-            steps {
-                script {
-                    // Validate if the application is running as expected (health check, etc.)
-                    echo "Validating the application..."
-                }
-            }
+        stage('Validate App is Running') {
+          	steps {
+               	script {
+					pipeline.validateApp()
+				}
+			}
         }
-
-        stage('Stop Spring') {
-            steps {
-                script {
-                    // Stop Spring or any running services
-                    echo "Stopping Spring Application..."
-                }
-            }
+        stage('wait') {
+			steps {
+				script {
+					pipeline.waiting()
+				}
+			}
         }
-    }
-
-    post {
-        always {
-            script {
-                // Run cleanup tasks after the pipeline, whether successful or failed
-                echo "Cleaning up..."
-                // Example: call shared cleanup function
-                // cleanupProcesses()  // Ensure this is defined in your shared library
-            }
+        stage('stoping') {
+			steps {
+				script {
+					pipeline.stop()
+				}
+			}
         }
-        success {
-            echo "Pipeline executed successfully!"
-        }
-        failure {
-            echo "Pipeline failed!"
-        }
+         stage('cleaning') {
+			steps {
+				script {
+					pipeline.clean()
+				}
+			}
+        }        
     }
 }
