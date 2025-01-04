@@ -1,7 +1,7 @@
-@Library('my-shared-library@main') _
+@Library('my-shared-library@main') _  // Correct syntax
 
 pipeline {
-    agent { label 'slave-1' }
+    agent { label 'slave' }
 
     environment {
         JAVA_HOME = '/usr/lib/jvm/java-17-openjdk-amd64'
@@ -9,79 +9,77 @@ pipeline {
         PATH = "${JAVA_HOME}/bin:${MAVEN_HOME}/bin:${env.PATH}"
     }
 
-   stages {
-        stage('Checkout Code') {
-            steps {
-		script {
-			pipeline.checkscm()
-		}		
-       	}
-     }
-        stage('Set up Java 17') {
+    stages {
+        stage('checkout') {
             steps {
                 script {
-                	pipeline.setupjava()
+                    buildtest.checkoutCode()
                 }
             }
-	}
+        }
 
-        stage('Set up Maven') {
+        stage('setup java') {
             steps {
                 script {
-                	pipeline.mavensetup()
-		}
+                    buildtest.setupJava17()
+                }
             }
         }
 
-        stage('Build with Maven') {
+        stage('setup mvn') {
             steps {
                 script {
-			pipeline.build()
-		}
+                    buildtest.setupMaven()
+                }
             }
         }
 
-        stage('Upload Artifact') {
-            steps {
-                uploadArtifact('target/petclinic-0.0.1-SNAPSHOT.jar')
-            }
-        }
-
-        stage('Run Application') {
+        stage('setup build') {
             steps {
                 script {
-				pipeline.runApp()
-				}
+                    buildtest.buildProject()
+                }
             }
         }
 
-        stage('Validate App is Running') {
-          	steps {
-               	script {
-					pipeline.validateApp()
-				}
-			}
+        stage('upload artifact') {
+            steps {
+                script {
+                    buildtest.uploadArtifact('target/*.jar')
+                }
+            }
         }
-        stage('wait') {
-			steps {
-				script {
-					pipeline.waiting()
-				}
-			}
+
+        stage('run application') {
+            steps {
+                script {
+                    buildtest.runSpringBootApp()
+                }
+            }
         }
-        stage('stoping') {
-			steps {
-				script {
-					pipeline.stop()
-				}
-			}
+
+        stage('validate application') {
+            steps {
+                script {
+                    buildtest.validateAppRunning()
+                }
+            }
         }
-         stage('cleaning') {
-			steps {
-				script {
-					pipeline.clean()
-				}
-			}
-        }        
+
+        stage('stop spring') {
+            steps {
+                script {
+                    buildtest.stopSpringBootApp()
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            script {
+                buildtest.cleanupProcesses()
+            }
+        }
     }
 }
