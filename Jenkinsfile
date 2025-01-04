@@ -20,7 +20,9 @@ pipeline {
 
     post {
         always {
-            cleanup()
+            script {
+                 pipeline.cleanupProcesses()
         }
-    }
+      }
+   }
 }
