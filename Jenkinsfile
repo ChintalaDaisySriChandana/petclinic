@@ -1,4 +1,5 @@
-@Library('my-shared-library@main') _
+@Library('my-shared-library@main') _  // Correct syntax
+
 pipeline {
     agent { label 'slave-1' }
 
@@ -7,16 +8,17 @@ pipeline {
         MAVEN_HOME = '/usr/share/maven'
         PATH = "${JAVA_HOME}/bin:${MAVEN_HOME}/bin:${env.PATH}"
     }
-    
+
     stages {
         stage('pipeline') {
             steps {
                 pipeline()
             }
         }
+   
     }
-    
-   post {
+
+    post {
         always {
             cleanup()
         }
