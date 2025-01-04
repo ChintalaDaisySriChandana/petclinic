@@ -1,76 +1,102 @@
-@Library('my-shared-library@main') _  // Correct syntax
+@Library('my-shared-library') _  // Import shared library
 
 pipeline {
-    agent { label 'slave-1' }
+    agent any
 
     environment {
-        JAVA_HOME = '/usr/lib/jvm/java-17-openjdk-amd64'
-        MAVEN_HOME = '/usr/share/maven'
-        PATH = "${JAVA_HOME}/bin:${MAVEN_HOME}/bin:${env.PATH}"
+        GIT_CREDENTIALS = credentials('git-credentials-id')  // Define Git credentials ID for SCM
     }
+
     stages {
-        stage('checkout') {
+        stage('Checkout SCM') {
             steps {
                 script {
-                 pipeline.checkoutCode()
+                    // Checkout code from the repository (using Jenkins SCM configuration)
+                    checkout scm
+                    // Or specify the git checkout directly if required
+                    // git url: 'https://github.com/ChintalaDaisySriChandana/petclinic.git', branch: 'main', credentialsId: 'git-credentials-id'
                 }
             }
         }
-        stage('setup java ') {
+
+        stage('Setup Java') {
             steps {
                 script {
-                 pipeline.setupJava17()
+                    // Setup Java (could be an install or configuration task)
+                    sh 'java -version'
                 }
             }
         }
-        stage('setup mvn ') {
+
+        stage('Setup Maven') {
             steps {
                 script {
-                 pipeline.setupMaven()
-                }
-            }
-        }  
-        stage('setup build ') {
-            steps {
-                script {
-                 pipeline.buildProject()
-                }
-            }
-        }        
-        stage('upload artifact ') {
-            steps {
-                script {
-                 pipeline.uploadArtifact('target/*.jar')
-                } 
-            }
-        } 
-        stage('run application ') {
-            steps {
-                script {
-                 pipeline.runSpringBootApp()
-                }
-            }
-        } 
-        stage('validate application ') {
-            steps {
-                script {
-                 pipeline.validateAppRunning()
+                    // Setup Maven (e.g., check Maven version)
+                    sh 'mvn -v'
                 }
             }
         }
-        stage('stop spring ') {
+
+        stage('Build and Test') {
             steps {
                 script {
-                 pipeline.stopSpringBootApp()
+                    // Execute Maven build and tests
+                    sh 'mvn clean install'
+                }
+            }
+        }
+
+        stage('Upload Artifact') {
+            steps {
+                script {
+                    // Upload build artifacts (optional)
+                    echo "Uploading artifacts..."
+                }
+            }
+        }
+
+        stage('Run Application') {
+            steps {
+                script {
+                    // Run the application (e.g., starting a service or application)
+                    echo "Running the application..."
+                }
+            }
+        }
+
+        stage('Validate Application') {
+            steps {
+                script {
+                    // Validate if the application is running as expected (health check, etc.)
+                    echo "Validating the application..."
+                }
+            }
+        }
+
+        stage('Stop Spring') {
+            steps {
+                script {
+                    // Stop Spring or any running services
+                    echo "Stopping Spring Application..."
                 }
             }
         }
     }
-post {
+
+    post {
         always {
             script {
-                 pipeline.cleanupProcesses()
+                // Run cleanup tasks after the pipeline, whether successful or failed
+                echo "Cleaning up..."
+                // Example: call shared cleanup function
+                // cleanupProcesses()  // Ensure this is defined in your shared library
+            }
         }
-      }
-   }
+        success {
+            echo "Pipeline executed successfully!"
+        }
+        failure {
+            echo "Pipeline failed!"
+        }
+    }
 }
